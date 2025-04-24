@@ -74,11 +74,11 @@ The server listens on `http://localhost:3000`.
 - **Endpoint**: `POST /create`
 - **Request JSON**:
   ```json
-  { "dimension": 128 }
+  { "dimension": 128, "metadata": { "key1": "value1" } }
   ```
 - **Response**:
   ```json
-  { "status": "ok", "dimension": 128 }
+  { "status": "ok", "dimension": 128, "metadata": { "key1": "value1" } }
   ```
 
 ### 2. Insert Vector

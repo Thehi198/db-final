@@ -9,7 +9,7 @@ import (
 
 var db *vectordb.Database
 
-type createReq struct { Dimension int `json:"dimension"` }
+type createReq struct { Dimension int `json:"dimension"`; Metadata map[string]string `json:"metadata,omitempty"` }
 type insertReq struct { Values []float64 `json:"values"`; Metadata map[string]string `json:"metadata,omitempty"` }
 type queryReq  struct { Values []float64 `json:"values"`; K int `json:"k"`; MetadataFilter map[string]string `json:"metadata_filter,omitempty"` }
 type insertResp struct { UUID string `json:"uuid"` }
@@ -26,7 +26,8 @@ func main() {
 			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		}
 		db = vectordb.NewDatabase(req.Dimension)
-		return c.JSON(fiber.Map{"status": "ok", "dimension": req.Dimension})
+		db.Metadata = req.Metadata
+		return c.JSON(fiber.Map{"status": "ok", "dimension": req.Dimension, "metadata": req.Metadata})
 	})
 
 	app.Post("/insert", func(c *fiber.Ctx) error {
