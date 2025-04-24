@@ -21,6 +21,7 @@ type Results struct {
 
 type Database struct {
 	Dimension int
+	Metadata  map[string]string
 	Vectors   []Vector
 	index     *hnsw.Graph[int]
 }
@@ -39,6 +40,7 @@ func NewDatabase(dimension int) *Database {
 	}
 	return &Database{
 		Dimension: dimension,
+		Metadata:  make(map[string]string),
 		Vectors:   make([]Vector, 0),
 		index:     idx,
 	}
