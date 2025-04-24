@@ -201,5 +201,3 @@ go test ./vectordb -v
 ```
 
 ---
-
-*Built with ❤ in Go.*
