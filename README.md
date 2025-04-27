@@ -148,7 +148,9 @@ The server listens on `http://localhost:3000`.
 
 ## Library Functions
 
-```go
+### Database Functions
+
+```go 
 // NewDatabase creates an in-memory vector DB with HNSW index for d-dimension.
 func NewDatabase(d int) *Database
 
@@ -181,6 +183,10 @@ type Results struct {
     Distance float64
 }
 ```
+
+### Vectorizing Functions
+
+[Add section here to explain functions]
 
 ---
 
