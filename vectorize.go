@@ -1,4 +1,4 @@
-package vectordb
+package main
 
 import (
 	"encoding/json"
