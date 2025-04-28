@@ -17,7 +17,7 @@ type queryByUUIDReq struct { UUID string `json:"uuid"` }
 type updateReq struct { UUID string `json:"uuid"`; Values []float64 `json:"values"`; Metadata map[string]string `json:"metadata,omitempty"` }
 type deleteReq struct { UUID string `json:"uuid"` }
 
-func main() {
+func serve() {
 	app := fiber.New()
 
 	app.Post("/create", func(c *fiber.Ctx) error {

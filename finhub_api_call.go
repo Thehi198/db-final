@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"vectordb/vectordb"
 )
 
 func main() {
@@ -15,11 +14,12 @@ func main() {
 
 	ticker := "AMD" // Example ticker
 
-	vec, dateStr, err := vectordb.FetchLatestVector(ticker, apiKey)
+	vec, dateStr, err := FetchLatestVector(ticker, apiKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("Embedded vector for latest available date", dateStr, ":", vec)
 }
+
 // test commit
