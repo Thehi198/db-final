@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -17,8 +21,7 @@ type insertReq struct {
 func InitFinnhubClient() *finnhub.DefaultApiService {
 	cfg := finnhub.NewConfiguration()
 	cfg.AddDefaultHeader("X-Finnhub-Token", os.Getenv("FINNHUB_API_KEY"))
-	apiClient := finnhub.NewAPIClient(cfg)
-	return apiClient.DefaultApi
+	return finnhub.NewAPIClient(cfg).DefaultApi
 }
 
 func symbolToFloat(ticker string) float64 {
@@ -31,9 +34,46 @@ func symbolToFloat(ticker string) float64 {
 		return 3.0
 	case "TSLA":
 		return 4.0
+	case "NVDA":
+		return 5.0
 	default:
 		return 0.0
 	}
+}
+
+func fetchAndInsertQuote(client *finnhub.DefaultApiService, ticker string) {
+	quote, _, err := client.Quote(context.Background()).Symbol(ticker).Execute()
+	now := time.Now().UTC()
+	if err != nil || quote.O == nil || quote.C == nil {
+		log.Printf("⚠️  %s failed: %v", ticker, err)
+		return
+	}
+
+	vec := []float64{
+		symbolToFloat(ticker),
+		float64(now.Unix()) + float64(now.Nanosecond())/1e9,
+		float64(*quote.O),
+		float64(*quote.H),
+		float64(*quote.L),
+		float64(*quote.C),
+	}
+
+	req := insertReq{
+		Values: vec,
+		Metadata: map[string]string{
+			"ticker": ticker,
+			"time":   now.Format(time.RFC3339Nano),
+		},
+	}
+
+	body, _ := json.Marshal(req)
+	resp, err := http.Post("http://localhost:3000/insert", "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Printf("❌ Insert error for %s: %v", ticker, err)
+		return
+	}
+	defer resp.Body.Close()
+	log.Printf("✅ %s inserted at %s", ticker, now.Format("15:04:05.000"))
 }
 
 // GetTradingDay returns a date (UTC) that represents the correct trading day

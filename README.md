@@ -81,11 +81,16 @@ We are using the Finnhub API for live financial data requests
 # Flash your Finnhub private key onto bash
 export FINNHUB_API_KEY=your_api_key_here
 
-# Import Finnhub Go Library
+# Download/Import Finnhub Go Library
+
+go get github.com/Finnhub-Stock-API/finnhub-go/v2
 
 import (
   finnhub "github.com/Finnhub-Stock-API/finnhub-go/v2"
 )
+
+# Output Vector:
+{Ticker, Time, Open Price, Highest Price, Lowest Price, Closing Price}
 
 ```
 
