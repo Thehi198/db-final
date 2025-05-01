@@ -60,8 +60,11 @@ go get github.com/Finnhub-Stock-API/finnhub-go/v2
 ## Running the Server
 
 ```bash
-# Run directly
-go run server.go
+# Run directly to use the same terminal
+go run server.go &
+
+# To stop the server from running use
+kill %1
 
 # Or start built binary
 ./vectordb-server
@@ -71,6 +74,20 @@ The server listens on `http://localhost:3000`.
 ---
 
 ## API Documentation
+
+We are using the Finnhub API for live financial data requests
+
+```bash
+# Flash your Finnhub private key onto bash
+export FINNHUB_API_KEY=your_api_key_here
+
+# Import Finnhub Go Library
+
+import (
+  finnhub "github.com/Finnhub-Stock-API/finnhub-go/v2"
+)
+
+```
 
 ### 1. Create Database
 
