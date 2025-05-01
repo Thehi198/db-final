@@ -1,127 +1,68 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"math"
-	"net/http"
+	"os"
 	"time"
+
+	finnhub "github.com/Finnhub-Stock-API/finnhub-go/v2"
 )
 
-// Structure for Finnhub API candle response
-type CandleResponse struct {
-	C []float64 `json:"c"`
-	V []float64 `json:"v"`
-	T []int64   `json:"t"`
-	S string    `json:"s"`
+// Initializes the Finnhub client
+func InitFinnhubClient() *finnhub.DefaultApiService {
+	cfg := finnhub.NewConfiguration()
+	cfg.AddDefaultHeader("X-Finnhub-Token", os.Getenv("FINNHUB_API_KEY"))
+	apiClient := finnhub.NewAPIClient(cfg)
+	return apiClient.DefaultApi
 }
 
-// Structure to hold a daily entry
-type DailyEntry struct {
-	Timestamp time.Time
-	Close     float32
-	Volume    float64
+// Returns the correct trading day in UTC based on current time
+func GetTradingDay(now time.Time) time.Time {
+	nyLoc, _ := time.LoadLocation("America/New_York")
+	nowNY := now.In(nyLoc)
+
+	// Revert to previous day if before 9:30 AM EST
+	marketOpen := time.Date(nowNY.Year(), nowNY.Month(), nowNY.Day(), 9, 30, 0, 0, nyLoc)
+	if nowNY.Before(marketOpen) {
+		nowNY = nowNY.AddDate(0, 0, -1)
+	}
+
+	// Revert to Friday if weekend
+	switch nowNY.Weekday() {
+	case time.Saturday:
+		nowNY = nowNY.AddDate(0, 0, -1)
+	case time.Sunday:
+		nowNY = nowNY.AddDate(0, 0, -2)
+	}
+
+	// Strip time and return UTC date
+	tradingDay := time.Date(nowNY.Year(), nowNY.Month(), nowNY.Day(), 0, 0, 0, 0, time.UTC)
+	return tradingDay
 }
 
-// Fetches a single day's data from Finnhub
-func fetchSingleDayAggregate(ticker, apiKey, date string) (*DailyEntry, error) {
-	from, _ := time.Parse("2006-01-02", date)
-	to := from.AddDate(0, 0, 1)
-
-	fromTs := from.Unix()
-	toTs := to.Unix()
-
-	url := fmt.Sprintf("https://finnhub.io/api/v1/stock/candle?symbol=%s&resolution=D&from=%d&to=%d&token=%s",
-		ticker, fromTs, toTs, apiKey,
-	)
-
-	resp, err := http.Get(url)
+// FetchQuoteVector retrieves [O, H, L, C, daysSinceEpoch] for the given ticker
+func FetchQuoteVector(client *finnhub.DefaultApiService, ticker string) ([]float32, time.Time, error) {
+	quote, _, err := client.Quote(context.Background()).Symbol(ticker).Execute()
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch candles: status code %d", resp.StatusCode)
+		return nil, time.Time{}, fmt.Errorf("API call failed: %w", err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	if quote.O == nil || quote.H == nil || quote.L == nil || quote.C == nil {
+		return nil, time.Time{}, fmt.Errorf("missing quote data in response")
 	}
 
-	var candle CandleResponse
-	err = json.Unmarshal(body, &candle)
-	if err != nil {
-		return nil, err
+	tradingDay := GetTradingDay(time.Now())
+	unixSeconds := float64(tradingDay.Unix())
+	daysSinceEpoch := float32(unixSeconds / 86400.0)
+
+	vector := []float32{
+		*quote.O,
+		*quote.H,
+		*quote.L,
+		*quote.C,
+		daysSinceEpoch,
 	}
 
-	if candle.S != "ok" || len(candle.C) == 0 {
-		return nil, fmt.Errorf("no data available for date: %s", date)
-	}
-
-	entry := &DailyEntry{
-		Timestamp: time.Unix(candle.T[0], 0),
-		Close:     float32(candle.C[0]),
-		Volume:    candle.V[0],
-	}
-	return entry, nil
-}
-
-// Finds the latest available day with data
-func fetchLatestAvailableDay(ticker, apiKey string) (*DailyEntry, string, error) {
-	date := time.Now().AddDate(0, 0, -1) // start from yesterday
-	for {
-		dateStr := date.Format("2006-01-02")
-		entry, err := fetchSingleDayAggregate(ticker, apiKey, dateStr)
-		if err == nil {
-			return entry, dateStr, nil
-		}
-		date = date.AddDate(0, 0, -1)
-	}
-}
-
-// Embeds ticker string into a vector
-func tickerEmbedding(ticker string) []float32 {
-	embed := make([]float32, len(ticker))
-	for i, c := range ticker {
-		ascii := int(c)
-		embed[i] = float32(ascii-65) / 25.0
-	}
-	return embed
-}
-
-// Embeds timestamp into a time2vec vector
-func time2vec(t time.Time) []float32 {
-	ts := float64(t.Unix())
-	scale := 100000.0
-	return []float32{
-		float32(math.Sin(ts / scale)),
-		float32(math.Cos(ts / scale)),
-	}
-}
-
-// Builds the final daily vector combining ticker, time, close, and volume
-func buildDailyVector(entry DailyEntry, ticker string) []float32 {
-	tickerVec := tickerEmbedding(ticker)
-	timeVec := time2vec(entry.Timestamp)
-	dataVec := []float32{entry.Close, float32(entry.Volume)}
-
-	vector := make([]float32, 0, len(tickerVec)+len(timeVec)+len(dataVec))
-	vector = append(vector, tickerVec...)
-	vector = append(vector, timeVec...)
-	vector = append(vector, dataVec...)
-
-	return vector
-}
-
-// FINAL exported function: fetches and builds latest available vector
-func FetchLatestVector(ticker, apiKey string) ([]float32, string, error) {
-	entry, dateStr, err := fetchLatestAvailableDay(ticker, apiKey)
-	if err != nil {
-		return nil, "", err
-	}
-	vec := buildDailyVector(*entry, ticker)
-	return vec, dateStr, nil
+	return vector, tradingDay, nil
 }

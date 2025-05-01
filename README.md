@@ -50,6 +50,9 @@ go test ./vectordb
 
 # Build server binary
 go build -o vectordb-server server.go
+
+# Install FinnHub Library
+go get github.com/Finnhub-Stock-API/finnhub-go/v2
 ```
 
 ---
