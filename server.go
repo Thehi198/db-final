@@ -2,20 +2,45 @@ package main
 
 import (
 	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"vectordb/vectordb"
 )
 
 var db *vectordb.Database
 
-type createReq struct { Dimension int `json:"dimension"`; Metadata map[string]string `json:"metadata,omitempty"` }
-type insertReq struct { Values []float64 `json:"values"`; Metadata map[string]string `json:"metadata,omitempty"` }
-type queryReq  struct { Values []float64 `json:"values"`; K int `json:"k"`; MetadataFilter map[string]string `json:"metadata_filter,omitempty"` }
-type insertResp struct { UUID string `json:"uuid"` }
-type queryByUUIDReq struct { UUID string `json:"uuid"` }
-type updateReq struct { UUID string `json:"uuid"`; Values []float64 `json:"values"`; Metadata map[string]string `json:"metadata,omitempty"` }
-type deleteReq struct { UUID string `json:"uuid"` }
+type createReq struct {
+	Dimension int                    `json:"dimension"`
+	Metadata  map[string]string      `json:"metadata,omitempty"`
+}
+
+type insertReq struct {
+	Values     []float64             `json:"values"`
+	Metadata   map[string]string     `json:"metadata,omitempty"`
+}
+
+type queryReq struct {
+	Values     []float64             `json:"values"`
+	K          int                   `json:"k"`
+	MetadataFilter map[string]string `json:"metadata_filter,omitempty"`
+}
+
+type insertResp struct {
+	UUID string `json:"uuid"`
+}
+
+type queryByUUIDReq struct {
+	UUID string `json:"uuid"`
+}
+
+type updateReq struct {
+	UUID     string                `json:"uuid"`
+	Values   []float64             `json:"values"`
+	Metadata map[string]string     `json:"metadata,omitempty"`
+}
+
+type deleteReq struct {
+	UUID string `json:"uuid"`
+}
 
 func serve() {
 	app := fiber.New()
@@ -57,6 +82,7 @@ func serve() {
 		if err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		}
+		// add null return no results found
 		return c.JSON(res)
 	})
 

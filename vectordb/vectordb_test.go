@@ -6,7 +6,6 @@ import (
 	"testing"
 )
 
-// vectordb_test.go: detailed tests for vectordb operations and HNSW behavior.
 
 func TestInsertDimensionMismatch(t *testing.T) {
 	db := NewDatabase(3)
