@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"math"
 	"sort"
+
 	"github.com/coder/hnsw"
 	"github.com/google/uuid"
 )
 
 type Vector struct {
-	UUID    string            `json:"uuid"`
-	Values  []float64         `json:"values"`
+	UUID     string            `json:"uuid"`
+	Values   []float64         `json:"values"`
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
