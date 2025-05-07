@@ -3,7 +3,7 @@ import requests
 from dotenv import load_dotenv
 import os
 
-# --- Load environment variables ---
+
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 query_api_url = "http://localhost:3000/query"
@@ -32,13 +32,18 @@ def query_vector_db(query_text, k=5, metadata_filter=None):
         raise Exception(f"Query failed: {r.status_code} | {r.text}")
 
 if __name__ == "__main__":
-    query = input("Enter your search query: ")
+    while True:
+        query = input("Enter your search query: ")
+        selected_key = "headline"
 
+        try:
+            results = query_vector_db(query, k=5)
+            print("\nTop Results:")
+            for idx, result in enumerate(results, 1):
+                metadata = result.get("vector", {}).get("metadata", {})
+                value = metadata.get(selected_key, "N/A")
+                distance = result.get("distance", "N/A")
+                print(f"{idx}| {value} | {distance:.4f}")
+        except Exception as e:
+            print(e)
 
-    try:
-        results = query_vector_db(query, k=5)
-        print("\nTop Results:")
-        for idx, result in enumerate(results, 1):
-            print(f"{idx}| {result}")
-    except Exception as e:
-        print(e)
