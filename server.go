@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-
 	"vectordb/vectordb"
 
 	"github.com/gofiber/fiber/v2"
@@ -116,6 +115,13 @@ func serve() {
 			return c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(fiber.Map{"status": "deleted"})
+	})
+
+	app.Get("/list", func(c *fiber.Ctx) error {
+		if db == nil {
+			return c.Status(400).JSON(fiber.Map{"error": "db not initialized"})
+		}
+		return c.JSON(db.Vectors)
 	})
 
 	log.Fatal(app.Listen(":3000"))
