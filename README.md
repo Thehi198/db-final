@@ -184,9 +184,6 @@ type Results struct {
 }
 ```
 
-### Vectorizing Functions
-
-[Add section here to explain functions]
 
 ---
 
